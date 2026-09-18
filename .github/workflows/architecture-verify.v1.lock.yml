@@ -511,6 +511,9 @@ jobs:
         name: Validate proposed architecture deterministically
         run: "set -euo pipefail\n\npython scripts/validate_json_schema.py \\\n  schemas/bootstrap-scope.schema.json \\\n  .architecture/bootstrap-scope.yaml\n\npython scripts/validate_architecture.py \\\n  --scope .architecture/bootstrap-scope.yaml \\\n  --base \"$ARCH_BASE_SHA\"\n"
         shell: bash
+      - name: Seed Gemini auth config
+        run: "set -euo pipefail\nmkdir -p \"$GITHUB_WORKSPACE/.gemini\"\nSETTINGS=\"$GITHUB_WORKSPACE/.gemini/settings.json\"\nAUTH_CONFIG='{\"security\":{\"auth\":{\"selectedType\":\"USE_GEMINI\"}}}'\n\nif [ -f \"$SETTINGS\" ]; then\n  jq -n \\\n    --argjson auth \"$AUTH_CONFIG\" \\\n    --argjson existing \"$(cat \"$SETTINGS\")\" \\\n    '$existing * $auth' > \"$SETTINGS\"\nelse\n  printf '%s\\n' \"$AUTH_CONFIG\" > \"$SETTINGS\"\nfi\n"
+        shell: bash
       - id: evidence-access
         name: Determine verification credential mode
         run: "set -euo pipefail\n\naccess_mode=\"$(\n  python scripts/prepare_evidence.py \\\n    verify-access \\\n    .architecture/bootstrap-scope.yaml \\\n    docs/architecture/architecture.md\n)\"\n\ncase \"$access_mode\" in\n  local)\n    echo \"github_app_required=false\" >> \"$GITHUB_OUTPUT\"\n    ;;\n  github_app)\n    echo \"github_app_required=true\" >> \"$GITHUB_OUTPUT\"\n    ;;\n  *)\n    echo \"Unsupported access mode: $access_mode\" >&2\n    exit 1\n    ;;\nesac\n"
