@@ -85,6 +85,23 @@ steps:
         --scope .architecture/bootstrap-scope.yaml \
         --base "$ARCH_BASE_SHA"
 
+  - name: Seed Gemini auth config
+    shell: bash
+    run: |
+      set -euo pipefail
+      mkdir -p "$GITHUB_WORKSPACE/.gemini"
+      SETTINGS="$GITHUB_WORKSPACE/.gemini/settings.json"
+      AUTH_CONFIG='{"security":{"auth":{"selectedType":"USE_GEMINI"}}}'
+
+      if [ -f "$SETTINGS" ]; then
+        jq -n \
+          --argjson auth "$AUTH_CONFIG" \
+          --argjson existing "$(cat "$SETTINGS")" \
+          '$existing * $auth' > "$SETTINGS"
+      else
+        printf '%s\n' "$AUTH_CONFIG" > "$SETTINGS"
+      fi
+
   - name: Determine verification credential mode
     id: evidence-access
     shell: bash
