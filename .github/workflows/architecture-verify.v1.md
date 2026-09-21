@@ -79,7 +79,7 @@ steps:
       python scripts/validate_json_schema.py \
         schemas/bootstrap-scope.schema.json \
         .architecture/bootstrap-scope.yaml
-      python scripts/validate_architecture.py \
+
       python scripts/validate_architecture.py \
         --scope .architecture/bootstrap-scope.yaml
 
