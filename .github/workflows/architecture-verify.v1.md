@@ -19,6 +19,7 @@ permissions:
 
 engine: 
   id: gemini
+  version: "0.60.0"
   model: gemini-3.5-flash
 
 max-turns: 2
@@ -72,8 +73,6 @@ steps:
 
   - name: Validate proposed architecture deterministically
     shell: bash
-    env:
-      ARCH_BASE_SHA: ${{ github.event.pull_request.base.sha }}
     run: |
       set -euo pipefail
 
@@ -82,8 +81,7 @@ steps:
         .architecture/bootstrap-scope.yaml
 
       python scripts/validate_architecture.py \
-        --scope .architecture/bootstrap-scope.yaml \
-        --base "$ARCH_BASE_SHA"
+        --scope .architecture/bootstrap-scope.yaml
 
   - name: Determine verification credential mode
     id: evidence-access
