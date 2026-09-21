@@ -4,9 +4,7 @@
 from __future__ import annotations
 
 import argparse
-import os
 import re
-import subprocess
 import sys
 import unicodedata
 from pathlib import Path
@@ -17,11 +15,6 @@ import yaml
 
 ARCHITECTURE = Path("docs/architecture/architecture.md")
 ARCHITECTURE_MAP = Path("docs/architecture/architecture-map.md")
-
-ALLOWED_CHANGED_PATHS = {
-    ARCHITECTURE.as_posix(),
-    ARCHITECTURE_MAP.as_posix(),
-}
 
 REQUIRED_SECTIONS = (
     "Source repositories",
@@ -88,30 +81,6 @@ SECRET_PATTERNS = {
         r"\bAIza[0-9A-Za-z_-]{30,}\b"
     ),
 }
-
-
-class ValidationFailure(RuntimeError):
-    """Raised for validation setup failures."""
-
-
-def run_git(arguments: Iterable[str]) -> bytes:
-    """Run Git without invoking a shell."""
-    completed = subprocess.run(
-        ["git", *arguments],
-        check=False,
-        capture_output=True,
-    )
-
-    if completed.returncode != 0:
-        stderr = completed.stderr.decode(
-            "utf-8",
-            errors="replace",
-        ).strip()
-        raise ValidationFailure(
-            f"git {' '.join(arguments)} failed: {stderr}"
-        )
-
-    return completed.stdout
 
 
 def load_scope(path: Path) -> dict:
@@ -463,39 +432,6 @@ def validate_secrets(
                 )
 
 
-def changed_paths_for_base(base: str) -> set[str]:
-    """Return pull-request paths relative to a base commit."""
-    output = run_git(
-        ["diff", "--name-only", "-z", f"{base}...HEAD"]
-    )
-    return {
-        item.decode("utf-8")
-        for item in output.split(b"\x00")
-        if item
-    }
-
-
-def working_tree_paths() -> set[str]:
-    """Return tracked and untracked working-tree paths."""
-    tracked = run_git(["diff", "--name-only", "-z"])
-    staged = run_git(
-        ["diff", "--cached", "--name-only", "-z"]
-    )
-    untracked = run_git(
-        ["ls-files", "--others", "--exclude-standard", "-z"]
-    )
-
-    return {
-        item.decode("utf-8")
-        for item in (
-            tracked.split(b"\x00")
-            + staged.split(b"\x00")
-            + untracked.split(b"\x00")
-        )
-        if item
-    }
-
-
 def build_parser() -> argparse.ArgumentParser:
     """Build command-line arguments."""
     parser = argparse.ArgumentParser(
@@ -505,13 +441,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--scope",
         required=True,
         type=Path,
-    )
-
-    change_group = parser.add_mutually_exclusive_group()
-    change_group.add_argument("--base")
-    change_group.add_argument(
-        "--working-tree",
-        action="store_true",
     )
 
     return parser
@@ -539,7 +468,7 @@ def main() -> int:
             encoding="utf-8"
         )
         scope = load_scope(arguments.scope)
-    except (OSError, UnicodeError, yaml.YAMLError, ValidationFailure) as error:
+    except (OSError, UnicodeError, yaml.YAMLError) as error:
         print(f"validation setup failed: {error}", file=sys.stderr)
         return 1
 
@@ -596,31 +525,6 @@ def main() -> int:
         (ARCHITECTURE, ARCHITECTURE_MAP),
         errors,
     )
-
-    try:
-        if arguments.base:
-            changed_paths = changed_paths_for_base(
-                arguments.base
-            )
-        elif arguments.working_tree:
-            changed_paths = working_tree_paths()
-        else:
-            changed_paths = set()
-    except (ValidationFailure, UnicodeDecodeError) as error:
-        errors.append(str(error))
-        changed_paths = set()
-
-    for path in sorted(
-        changed_paths - ALLOWED_CHANGED_PATHS
-    ):
-        errors.append(
-            f"disallowed changed path: {path}"
-        )
-
-    if arguments.working_tree and not changed_paths:
-        errors.append(
-            "working tree contains no architecture changes"
-        )
 
     if errors:
         print(

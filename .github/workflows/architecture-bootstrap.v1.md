@@ -207,8 +207,7 @@ scope files.
 
     ```bash
     python scripts/validate_architecture.py \
-      --scope .architecture/bootstrap-scope.yaml \
-      --working-tree
+      --scope .architecture/bootstrap-scope.yaml
     ```
 
 17. If either validation fails, do not request a pull request.

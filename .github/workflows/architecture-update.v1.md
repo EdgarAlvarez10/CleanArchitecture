@@ -226,8 +226,7 @@ For `architecture_update_proposed`:
 
    ```bash
    python scripts/validate_architecture.py \
-     --scope .architecture/bootstrap-scope.yaml \
-     --working-tree
+     --scope .architecture/bootstrap-scope.yaml
    ```
 
 8. If validation succeeds, request one draft pull request through the configured

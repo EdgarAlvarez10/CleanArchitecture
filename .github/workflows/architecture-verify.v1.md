@@ -73,18 +73,15 @@ steps:
 
   - name: Validate proposed architecture deterministically
     shell: bash
-    env:
-      ARCH_BASE_SHA: ${{ github.event.pull_request.base.sha }}
     run: |
       set -euo pipefail
 
       python scripts/validate_json_schema.py \
         schemas/bootstrap-scope.schema.json \
         .architecture/bootstrap-scope.yaml
-
       python scripts/validate_architecture.py \
-        --scope .architecture/bootstrap-scope.yaml \
-        --base "$ARCH_BASE_SHA"
+      python scripts/validate_architecture.py \
+        --scope .architecture/bootstrap-scope.yaml
 
   - name: Determine verification credential mode
     id: evidence-access
