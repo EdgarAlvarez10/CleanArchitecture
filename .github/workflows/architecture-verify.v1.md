@@ -19,6 +19,7 @@ permissions:
 
 engine: 
   id: gemini
+  version: "0.60.0"
   model: gemini-3.5-flash
 
 max-turns: 2
